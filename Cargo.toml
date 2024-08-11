@@ -1,0 +1,9 @@
+[package]
+name = "Wallfacer"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+winit = "0.28.3"
+pixels = "0.12.1"
+glam = "0.28.0"
