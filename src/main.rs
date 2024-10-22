@@ -5,22 +5,47 @@ use winit::{
     event_loop::{ControlFlow, EventLoop},
     window::WindowBuilder,
 };
-use pixels::{Pixels, SurfaceTexture};
-use pixels::wgpu::Color;
 
+use colored::Colorize;
+
+use rand::Rng;
+use rand;
+use std::time::{Duration, Instant};
 
 use glam::f32::Vec2;
+use pixels::wgpu::Color;
 
-use std::rc::Rc;
-use std::cell::RefCell;
+mod physics;
+use physics::*;
+
+mod planet;
+use planet::*;
+
+mod util;
+use util::*;
 
 const delta_t: f32 = 1.1;
+
+const WIDTH: usize = 1200;
+const HEIGHT: usize = 800;
+const BRIGHTNESS_THRESHOLD: u8 = 100;
+const BLUR_RADIUS: usize = 5;
+
+// use std::time::{Duration, Instant};
+//
+// fn main() {
+    // let start = Instant::now();
+    // expensive_function();
+    // let duration = start.elapsed();
+
+    // println!("Time elapsed in expensive_function() is: {:?}", duration);
+// }
 
 fn main() {
 
     let event_loop = EventLoop::new();
     let window = {
-        let size = LogicalSize::new(800, 600);
+        let size = LogicalSize::new(WIDTH as u32, HEIGHT as u32);
         WindowBuilder::new()
             .with_title("Zoom example")
             .with_inner_size(size)
@@ -32,136 +57,78 @@ fn main() {
 
 
 
-    let mut planet = Planet {pos: Vec2::new(200.0, 200.0), radius: 5.0, vel: Vec2::new(0.0, 0.0), mass: 1.1};
+    // let mut planet = Planet {pos: Vec2::new(200.0, 200.0), radius: 5.0, vel: Vec2::new(0.0, 0.0), mass: 100000.1};
+    let mut planet = Planet::new("Earth", Vec2::new(200.0, 200.0), 5.0, Vec2::new(0.0, 0.0), 100_000.1, PlanetColor::red());
 
 
-    let mut planet2 = Planet {pos: Vec2::new(400.0, 300.0), radius: 10.0, vel: Vec2::new(0.0, 0.0), mass: 10000000000000.0};
     // good values between two planets are 1.1 and  10000000000000.0
-
+    // let mut planet2 = Planet {pos: Vec2::new(400.0, 300.0), radius: 10.0, vel: Vec2::new(0.05, 0.0), mass: 10_000_000_000_000_0.0};
+    let mut planet2 = Planet::new("Sun", Vec2::new(400.0, 300.0), 10.0, Vec2::new(0.0, 0.0), 10_000_000_000.0, PlanetColor::white());
     let init_vel = calc_init_orbital_velocity(&planet, &planet2);
     planet.vel = init_vel;
 
-
     println!("Will escape orbit: {}", check_escape_velocity(&planet, &planet2));
+
+    let mut planet3 = Planet::new("Moon", Vec2::new(500.0, 500.0), 3.0, Vec2::new(0.0, 0.0), 1000.5, PlanetColor::blue());
+    let init_vel = calc_init_orbital_velocity(&planet3, &planet2);
+    planet3.vel = init_vel;
+
+    println!("Will escape orbit: {}", check_escape_velocity(&planet3, &planet2));
+
+    let  planet4 = Planet::create_satellite(&planet2, "Satellite", 8.0, 400.0, PlanetColor::green());
+    let planet5 = Planet::create_satellite(&planet, "Tiny Satellite", 2.0, 100.0, PlanetColor::new(150, 14, 21, 255));
     
 
-    let mut pixels = create_pixel_buffer(&window, 800, 600);
+    let mut pixels = create_pixel_buffer(&window, WIDTH as u32, HEIGHT as u32);
 
-    let clear_color = Color { r: 0.031, g: 0.004, b: 0.157, a: 0.2 as f64}; 
     pixels.clear_color(Color::BLACK);
+
+    let mut planet_list = Box::new(vec![planet, planet2, planet3, planet4, planet5]);
+    // let mut planet_list: &mut Vec<Planet> = &mut planets; 
     
+
     event_loop.run(move |event, _, control_flow| {
 
-
+    
     // let mut planet_list: Rc<RefCell<Vec<&mut Planet>>> = Rc::new(RefCell::new(vec![&mut planet,  &mut planet2]));
-    let mut planet_list = vec![&planet, &planet2];
 
         match event {
             Event::MainEventsCleared => {
                 pixels.frame_mut().fill(0 as u8);
                 let mut accel_list: Vec<Vec2>  = vec![];
-                for s in &planet_list {
+                for s in planet_list.iter() {
                     let mut accel = Vec2::new(0.0, 0.0);
-                    for  p in &planet_list {
+                    for  p in planet_list.iter() {
                         if s == p {
                             continue;
                         }
-                        accel += calc_accel(s, p);
-                        
+                        accel += calc_accel(&s, &p);
                         
                     }
                     // println!("{:?}", accel);
                     accel_list.push(accel);
                 }
-                // planet.render(&mut pixels);
-                // planet2.render(&mut pixels);
-                planet.update(accel_list[0]);
-                planet2.update(accel_list[1]);
-                planet.render(&mut pixels);
-                planet2.render(&mut pixels);
-                pixels.render();
+                for i in 0..planet_list.len() {
+                    planet_list[i].update(accel_list[i]);
+                    planet_list[i].render(&mut pixels);
+                }
+            // let bright_areas = extract_bright_areas(pixels.frame());
+
+    // Step 2: Apply Gaussian blur to the bright areas
+            // let blurred_bright_areas = gaussian_blur(&bright_areas);
+            //
+    // Step 3: Combine the original frame with the blurred bright areas
+            // combine_images(&mut pixels, &blurred_bright_areas);
+            pixels.render();
+        }
+        Event::WindowEvent {
+                event: WindowEvent::CloseRequested, .. } => {
+                *control_flow = ControlFlow::Exit;
             }
-            _ => {}
-        } 
+        _ => {}
+        }
     });
-
-    drop(planet);
-    drop(planet2);
-
     
 }
 
-fn create_pixel_buffer(window: &Window, w: u32, h: u32) -> Pixels {
-    let surface_texture = SurfaceTexture::new(
-        window.inner_size().width,
-        window.inner_size().height,
-        &window
-    );
-    Pixels::new(w, h, surface_texture).unwrap()
-}
 
-
-#[derive(Copy, Clone, PartialEq)]
-pub struct Planet {
-    pos: Vec2,
-    radius: f32,
-    vel: Vec2,
-    mass: f32
-}
-
-impl Planet {
-    pub fn render (self, px: &mut Pixels) {
-        for y in ((self.pos.y-self.radius) as usize)..((self.pos.y+self.radius) as usize) {
-            for x in ((self.pos.x-self.radius) as usize)..((self.pos.x+self.radius) as usize) {
-                let circle_check = ((x as f32 - self.pos.x).powf(2.0) + (y as f32 - self.pos.y).powf(2.0));
-                if (circle_check < self.radius.powf(2.0)) || (circle_check == self.radius.powf(2.0)) {
-                    let index = y * 800 * 4 + x * 4 as usize;
-                    if index > (800 * 600 * 4) {
-                        continue;
-                    }
-                    px.frame_mut()[index..index+4].copy_from_slice(vec![255u8, 0u8, 0u8, (1.0 * 255.0) as u8].as_slice());
-                }
-            }
-        }
-    }
-
-    pub fn update (&mut self, accel: Vec2) {
-        // self.vel += Vec2::new(0.01, 0.01);  //accel
-        self.vel += accel * delta_t;
-        self.pos += self.vel * delta_t;
-        // println!("{}",self.vel);
-    }
-}
-
-pub fn calc_accel(self_planet: &Planet, planet: &Planet) -> Vec2 {
-    let G: f32 = 6.6 * (10.0_f32).powf(-11.0_f32);
-    let mut resultant_force = Vec2::new(0.0, 0.0);
-        //ma = Gmm/r^2   -> a = Gm/r^2
-    let dist = ((planet.pos.x - self_planet.pos.x).powf(2.0) + (planet.pos.y - self_planet.pos.y).powf(2.0)).sqrt().abs(); 
-    let magnitude = (G * self_planet.mass * planet.mass) / dist.powi(2);
-    let force = (planet.pos - self_planet.pos).normalize_or_zero() * magnitude;
-    resultant_force += force;
-    let accel = force / self_planet.mass;
-    accel
-}
-
-
-pub fn calc_init_orbital_velocity(planet: &Planet, sun: &Planet) -> Vec2 {
-    let G: f32 = 6.6 * (10.0_f32).powf(-11.0_f32);
-    let dist = ((sun.pos.x - planet.pos.x).powf(2.0) + (sun.pos.y - planet.pos.y).powf(2.0)).sqrt().abs();
-    let v = ((G * sun.mass) / dist).sqrt();
-    let force = (sun.pos - planet.pos).perp().normalize_or_zero() * v.sqrt().abs();
-    force
-}
-
-pub fn check_escape_velocity(planet: &Planet, sun: &Planet) -> bool {
-// checks whether a given planet will escape the orbit of a given sun
-    let G: f32 = 6.6 * (10.0_f32).powf(-11.0_f32);
-    let dist = ((sun.pos.x - planet.pos.x).powf(2.0) + (sun.pos.y - planet.pos.y).powf(2.0)).sqrt().abs();
-    let escape_vel = ((2.0 * G * sun.mass) / dist ).sqrt();
-    if planet.vel.length() > escape_vel {
-        true
-    } else {
-        false
-    }
-}

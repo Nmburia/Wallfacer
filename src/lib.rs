@@ -1,5 +1,5 @@
-use glam::Vec2;
+pub mod physics;
+pub mod planet;
+pub mod util;
 
-pub struct Planet {
-    
-}
+use crate::util::*;
