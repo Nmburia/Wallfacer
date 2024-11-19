@@ -6,6 +6,6 @@ edition = "2021"
 [dependencies]
 winit = "0.28.3"
 pixels = "0.12.1"
-glam = "0.28.0"
+glam = "0.29.0"
 rand = "0.8.5"
 colored = "2.1.0"

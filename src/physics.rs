@@ -40,16 +40,47 @@ pub fn check_escape_velocity(planet: &Planet, sun: &Planet) -> bool {
 }
 
 pub fn check_collision(self_planet: &Planet, planet: &Planet) -> bool {
-    (self_planet.pos.distance(planet.pos) < self_planet.radius + planet.radius)
+    let check = (self_planet.pos.distance(planet.pos) <= self_planet.radius + planet.radius);
+    if check == true {
+        println!("Collision detected!")
+    }
+    check
 }
 
 pub fn calc_collision(self_planet: &Planet, planet: &Planet) -> Vec2 {
     let old_vel = self_planet.vel;
-    let part_a = (2.0 * planet.mass / (self_planet.mass * planet.mass));
+    let part_a = (2.0 * planet.mass / (self_planet.mass + planet.mass));
     let part_b = ((self_planet.vel - planet.vel).dot(self_planet.pos - planet.pos))
         / (self_planet.pos.distance(planet.pos).powi(2));
     let part_c = self_planet.pos - planet.pos;
-    let collision_force = part_a * part_b * part_c;
+    let mut collision_force = part_a * part_b * part_c;
+    collision_force = collision_force.reflect(planet.vel);
+    collision_force
+}
+
+pub fn calc_collision2(self_planet: &Planet, planet: &Planet) -> Vec2 {
+    // Vector from the other planet to this one (collision axis)
+    let collision_axis = self_planet.pos - planet.pos;
+    let distance_squared = collision_axis.length_squared();
+
+    if distance_squared == 0.0 {
+        // To handle any edge cases where positions might be identical, avoid division by zero
+        return Vec2::ZERO;
+    }
+
+    // Normalized direction vector along the collision axis
+    let collision_axis_normalized = collision_axis.normalize();
+
+    // Relative velocity in the direction of the collision axis
+    let relative_velocity = self_planet.vel - planet.vel;
+    let velocity_along_axis = relative_velocity.dot(collision_axis_normalized);
+
+    // Mass ratio factor for elastic collision
+    let mass_factor = (2.0 * planet.mass) / (self_planet.mass + planet.mass);
+
+    // The force applied in the direction of the collision axis
+    let collision_force = mass_factor * velocity_along_axis * collision_axis_normalized;
+
     collision_force
 }
 
