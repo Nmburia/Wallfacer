@@ -5,6 +5,8 @@ use winit::{
     window::WindowBuilder,
 };
 
+const delta_t: f32 = 0.1;
+
 use glam::f32::Vec2;
 use Wallfacer::{physics::*, planet::*, util::*};
 

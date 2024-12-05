@@ -25,7 +25,7 @@ fn main() {
         Vec2::new(500.0, 400.0),
         10.0,
         Vec2::new(0.0, 0.0),
-        10_000_000.0,
+        10_000_000.1,
         PlanetColor::white(),
     );
     // let planet1 = Planet::new(
