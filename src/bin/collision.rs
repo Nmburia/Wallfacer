@@ -43,52 +43,12 @@ fn main() {
     event_loop.run(move |event, _, control_flow| match event {
         Event::MainEventsCleared => {
             pixels.frame_mut().fill(0 as u8);
-            let mut accel_list: Vec<Vec2> = vec![];
-            let mut merge_list: Vec<(usize, usize)> = vec![];
-            for s in planet_list.iter() {
-                let mut accel = Vec2::new(0.0, 0.0);
-                for p in planet_list.iter() {
-                    if s == p {
-                        continue;
-                    }
-                    if check_collision(&s, &p) {
-                        if s.mass >= p.mass {
-                            //p gets merged into s
-                            let s_index = planet_list.iter().position(|x| *x == *s);
-                            let p_index = planet_list.iter().position(|x| *x == *p);
-                            if (s_index != None) & (p_index != None) {
-                                if !merge_list.iter().any(|(a, b)| {
-                                    (*b == p_index.unwrap()) | (*b == s_index.unwrap())
-                                }) {
-                                    merge_list.push((s_index.unwrap(), p_index.unwrap()));
-                                }
-                            }
-                        }
-                    }
-                    accel += calc_accel(&s, &p);
-                }
-                accel_list.push(accel);
-            }
+            process_physics_updates(&mut planet_list);
             for i in 0..planet_list.len() {
-                planet_list[i].update(accel_list[i]);
                 planet_list[i].render(&mut pixels);
                 planet_list[i].render_force2(&mut pixels);
             }
-            for pair in merge_list.iter() {
-                let mass_a = planet_list[pair.0].mass;
-                let vel_a = planet_list[pair.0].vel;
-                let mass_b = planet_list[pair.1].mass;
-                let vel_b = planet_list[pair.1].vel;
-
-                let init_momentum = mass_a * vel_a + mass_b * vel_b;
-                let final_mass = mass_a + mass_b;
-                let final_velocity = init_momentum / final_mass;
-
-                planet_list.remove(pair.1);
-                planet_list[pair.0].mass += final_mass;
-                planet_list[pair.0].vel += final_velocity;
-            }
-            pixels.render();
+            pixels.render().unwrap();
         }
         Event::WindowEvent {
             event: WindowEvent::CloseRequested,

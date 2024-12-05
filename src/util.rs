@@ -1,23 +1,17 @@
 use pixels::{Pixels, SurfaceTexture};
 use winit::window::Window;
 
-
-
-pub const delta_t: f32 = 1.1;
-
+pub const delta_t: f32 = 0.05;
 pub const WIDTH: usize = 1200;
 pub const HEIGHT: usize = 800;
 pub const BRIGHTNESS_THRESHOLD: u8 = 100;
 pub const BLUR_RADIUS: usize = 5;
 
-
-
-
 pub fn create_pixel_buffer(window: &Window, w: u32, h: u32) -> Pixels {
     let surface_texture = SurfaceTexture::new(
         window.inner_size().width,
         window.inner_size().height,
-        &window
+        &window,
     );
     Pixels::new(w, h, surface_texture).unwrap()
 }
@@ -98,8 +92,11 @@ fn combine_images(frame: &mut Pixels, blurred: &[u8]) {
         let overlay_b = blurred[4 * i + 2];
         let overlay_a = blurred[4 * i + 3] as f32 / 255.0;
 
-        frame.frame_mut()[4 * i] = ((base_r as f32 * (1.0 - overlay_a) + overlay_r as f32 * overlay_a) as u8).min(255);
-        frame.frame_mut()[4 * i + 1] = ((base_g as f32 * (1.0 - overlay_a) + overlay_g as f32 * overlay_a) as u8).min(255);
-        frame.frame_mut()[4 * i + 2] = ((base_b as f32 * (1.0 - overlay_a) + overlay_b as f32 * overlay_a) as u8).min(255);
+        frame.frame_mut()[4 * i] =
+            ((base_r as f32 * (1.0 - overlay_a) + overlay_r as f32 * overlay_a) as u8).min(255);
+        frame.frame_mut()[4 * i + 1] =
+            ((base_g as f32 * (1.0 - overlay_a) + overlay_g as f32 * overlay_a) as u8).min(255);
+        frame.frame_mut()[4 * i + 2] =
+            ((base_b as f32 * (1.0 - overlay_a) + overlay_b as f32 * overlay_a) as u8).min(255);
     }
 }
