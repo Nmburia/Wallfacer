@@ -119,6 +119,7 @@ fn main() {
             Event::MainEventsCleared => {
                 pixels.frame_mut().fill(0 as u8);
                 let mut accel_list: Vec<Vec2> = vec![];
+                let mut merge_list: Vec<(usize, usize)> = vec![];
                 for s in planet_list.iter() {
                     let mut accel = Vec2::new(0.0, 0.0);
                     for p in planet_list.iter() {
@@ -126,16 +127,32 @@ fn main() {
                             continue;
                         }
                         if check_collision(&s, &p) {
-                            accel += calc_collision(s, p);
+                            // accel += calc_collision(s, p);
+                            if s.mass > p.mass {
+                                let s_index = planet_list.iter().position(|x| *x == *s);
+                                let p_index = planet_list.iter().position(|x| *x == *p);
+                                if (s_index != None) & (p_index != None) {
+                                    merge_list.push((s_index.unwrap(), p_index.unwrap()));
+                                }
+                            }
                         }
                         accel += calc_accel(&s, &p);
                     }
                     // println!("{:?}", accel);
                     accel_list.push(accel);
                 }
+
                 for i in 0..planet_list.len() {
                     planet_list[i].update(accel_list[i]);
                     planet_list[i].render(&mut pixels);
+                }
+
+                for pair in merge_list.iter() {
+                    let added_mass = planet_list[pair.1].mass;
+                    let added_vel = planet_list[pair.1].vel;
+                    planet_list.remove(pair.1);
+                    planet_list[pair.0].mass += added_mass;
+                    planet_list[pair.0].vel += added_vel;
                 }
                 // let bright_areas = extract_bright_areas(pixels.frame());
 
