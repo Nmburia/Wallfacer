@@ -2,8 +2,8 @@ use crate::planet::Planet;
 use glam::Vec2;
 
 pub fn calc_accel(self_planet: &Planet, planet: &Planet) -> Vec2 {
-    // let G: f32 = 6.6 * (10.0_f32).powf(-11.0_f32);
-    let G: f32 = 0.0;
+    let G: f32 = 6.6 * (10.0_f32).powf(-11.0_f32);
+    // let G: f32 = 0.0;
     let mut resultant_force = Vec2::new(0.0, 0.0);
     //ma = Gmm/r^2   -> a = Gm/r^2
     let dist = ((planet.pos.x - self_planet.pos.x).powf(2.0)
@@ -104,7 +104,7 @@ pub fn process_physics_updates(planet_list: &mut Vec<Planet>) {
                     if (s_index != None) & (p_index != None) {
                         if !merge_list
                             .iter()
-                            .any(|(a, b)| (*b == p_index.unwrap()) | (*b == s_index.unwrap()))
+                            .any(|(_, b)| (*b == p_index.unwrap()) | (*b == s_index.unwrap()))
                         {
                             merge_list.push((s_index.unwrap(), p_index.unwrap()));
                         }
@@ -130,5 +130,6 @@ pub fn process_physics_updates(planet_list: &mut Vec<Planet>) {
 
         planet_list.remove(pair.1);
         planet_list[pair.0].mass += final_mass;
+        planet_list[pair.0].vel += final_velocity;
     }
 }

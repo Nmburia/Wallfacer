@@ -33,9 +33,9 @@ fn main() {
     let satellite = Planet::new(
         "Satellite",
         Vec2::new(200.0, 100.0),
-        10.0,
-        Vec2::new(1.0, 1.0) * 15.0,
-        100000.0,
+        5.0,
+        Vec2::new(1.0, 1.0) * 90.0,
+        10_000_000.0,
         PlanetColor::blue(),
     );
     let mut planet_list = Box::new(vec![target, satellite]);

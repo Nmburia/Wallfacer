@@ -48,7 +48,13 @@ fn main() {
         PlanetColor::new(150, 14, 21, 255),
     );
 
-    let mut planet_list = Box::new(vec![star, planet2]);
+    let mut planet_list = Box::new(vec![star, planet1, planet2, planet3]);
+    for p in planet_list.iter() {
+        println!(
+            "planet '{}' in position x: {}, y: {} ",
+            p.name, p.pos.x, p.pos.y
+        );
+    }
 
     event_loop.run(move |event, _, control_flow| match event {
         Event::MainEventsCleared => {
@@ -58,6 +64,13 @@ fn main() {
                 planet_list[i].render(&mut pixels);
             }
             _ = pixels.render().unwrap();
+            for p in planet_list.iter() {
+                print!(
+                    "planet '{}' in position x: {}, y: {} ",
+                    p.name, p.pos.x, p.pos.y
+                );
+            }
+            print!("\r");
         }
         Event::WindowEvent {
             event: WindowEvent::CloseRequested,

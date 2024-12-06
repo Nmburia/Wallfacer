@@ -1,7 +1,7 @@
 use pixels::{Pixels, SurfaceTexture};
 use winit::window::Window;
 
-pub const delta_t: f32 = 0.05;
+pub const delta_t: f32 = 0.5;
 pub const WIDTH: usize = 1200;
 pub const HEIGHT: usize = 800;
 pub const BRIGHTNESS_THRESHOLD: u8 = 100;

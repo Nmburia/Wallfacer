@@ -53,7 +53,8 @@ impl<'a> Planet<'a> {
         } else {
             let y = sun.pos.x - r;
         }
-        let y = (r.powi(2) - x.powi(2)).sqrt();
+        let y = (r.powi(2) - x.powi(2)).abs().sqrt();
+        println!("{name} y: {y}");
         let pos = Vec2::new(x, y);
 
         let mut new_planet = Self::new(name, pos, radius, Vec2::new(0.0, 0.0), mass, color);
