@@ -1,28 +1,37 @@
+use std::time::Instant;
+
+use cosmic_text::{Attrs, Buffer, Color, FontSystem, Metrics, SwashCache};
 use glam::Vec2;
 use pixels::Pixels;
 
 use crate::{
     physics::{calc_accel, check_collision},
     planet::Planet,
+    HEIGHT, WIDTH,
 };
 
 pub struct PlanetSystem<'a> {
     pub list: Vec<Planet<'a>>,
     pub timestep: f32,
+    systeminfo: SystemInfo,
 }
 
 impl<'a> PlanetSystem<'a> {
     pub fn empty(timestep: f32) -> Self {
+        let systeminfo = SystemInfo::new();
         Self {
             list: vec![],
             timestep,
+            systeminfo,
         }
     }
 
     pub fn from_vec(timestep: f32, planet_list: Vec<Planet<'a>>) -> Self {
+        let systeminfo = SystemInfo::new();
         Self {
             list: planet_list,
             timestep,
+            systeminfo,
         }
     }
 
@@ -86,5 +95,75 @@ impl<'a> PlanetSystem<'a> {
     pub fn update_and_render(&mut self, pixels: &mut Pixels) {
         self.update_system();
         self.render_system(pixels);
+        self.print_info(pixels);
+    }
+
+    pub fn print_info(&mut self, pixels: &mut Pixels) {
+        self.systeminfo.render_info(pixels);
+    }
+}
+
+struct SystemInfo {
+    last_frame_time: Instant,
+    font_system: FontSystem,
+    buffer: Buffer,
+    swash_cache: SwashCache,
+}
+
+impl SystemInfo {
+    pub fn new() -> Self {
+        let now = Instant::now();
+        let mut font_system = FontSystem::new();
+        let buffer = Buffer::new(&mut font_system, Metrics::new(16.0, 16.0));
+        let swash_cache = SwashCache::new();
+        Self {
+            last_frame_time: now,
+            font_system,
+            buffer,
+            swash_cache,
+        }
+    }
+
+    pub fn render_info(&mut self, pixels: &mut Pixels) {
+        let now = Instant::now();
+        let delta_t = now.duration_since(self.last_frame_time);
+        self.last_frame_time = now;
+        let fps = 1.0 / delta_t.as_secs_f32();
+        let text = format!("FPS: {}", fps);
+        let text_color = Color::rgb(0xFF, 0xFF, 0xFF);
+
+        self.buffer.set_text(
+            &mut self.font_system,
+            text.as_str(),
+            Attrs::new(),
+            cosmic_text::Shaping::Advanced,
+        );
+
+        self.buffer.draw(
+            &mut self.font_system,
+            &mut self.swash_cache,
+            text_color,
+            |x, y, w, h, color| {
+                let frame = pixels.frame_mut();
+                // Loop over each pixel in the rectangle
+                for dy in 0u32..h {
+                    for dx in 0u32..w {
+                        // Calculate the index in the pixel buffer
+                        let px = x as u32 + dx;
+                        let py = y as u32 + dy;
+                        if px < WIDTH as u32 && py < HEIGHT as u32 {
+                            let index = (py as u32 * WIDTH as u32 * 4 + px as u32 * 4) as usize;
+
+                            if index + 3 < frame.len() {
+                                frame[index] = color.r();
+                                frame[index + 1] = color.g();
+                                frame[index + 2] = color.b();
+                                frame[index + 3] = color.a();
+                            }
+                        }
+                    }
+                }
+            },
+        );
     }
 }
