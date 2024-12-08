@@ -5,10 +5,8 @@ use winit::{
     window::WindowBuilder,
 };
 
-const delta_t: f32 = 0.1;
-
 use glam::f32::Vec2;
-use Wallfacer::{physics::*, planet::*, util::*};
+use Wallfacer::{planet::*, system::*, util::*};
 
 fn main() {
     let event_loop = EventLoop::new();
@@ -38,16 +36,12 @@ fn main() {
         10_000_000.0,
         PlanetColor::blue(),
     );
-    let mut planet_list = Box::new(vec![target, satellite]);
+    let mut planet_list = PlanetSystem::from_vec(0.1, vec![target, satellite]);
 
     event_loop.run(move |event, _, control_flow| match event {
         Event::MainEventsCleared => {
             pixels.frame_mut().fill(0 as u8);
-            process_physics_updates(&mut planet_list);
-            for i in 0..planet_list.len() {
-                planet_list[i].render(&mut pixels);
-                planet_list[i].render_force2(&mut pixels);
-            }
+            planet_list.update_and_render(&mut pixels);
             pixels.render().unwrap();
         }
         Event::WindowEvent {

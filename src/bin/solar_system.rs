@@ -6,7 +6,7 @@ use winit::{
 };
 
 use glam::f32::Vec2;
-use Wallfacer::{physics::*, planet::*, util::*};
+use Wallfacer::{planet::*, system::*, util::*};
 
 fn main() {
     let event_loop = EventLoop::new();
@@ -28,15 +28,7 @@ fn main() {
         10_000_000_000.1,
         PlanetColor::white(),
     );
-    // let planet1 = Planet::new(
-    //     "Planet1",
-    //     Vec2::new(200.0, 100.0),
-    //     5.0,
-    //     Vec2::new(0.0, 0.0),
-    //     100.0,
-    //     PlanetColor::blue(),
-    // );
-    //
+
     let planet1 = Planet::create_satellite(&star, "Planet 1", 5.0, 1000.0, PlanetColor::blue());
 
     let planet2 = Planet::create_satellite(&planet1, "Satellite", 4.0, 0.1, PlanetColor::green());
@@ -48,8 +40,8 @@ fn main() {
         PlanetColor::new(150, 14, 21, 255),
     );
 
-    let mut planet_list = Box::new(vec![star, planet1, planet2, planet3]);
-    for p in planet_list.iter() {
+    let mut planet_list = PlanetSystem::from_vec(0.5, vec![star, planet1, planet2, planet3]);
+    for p in planet_list.list.iter() {
         println!(
             "planet '{}' in position x: {}, y: {} ",
             p.name, p.pos.x, p.pos.y
@@ -59,12 +51,9 @@ fn main() {
     event_loop.run(move |event, _, control_flow| match event {
         Event::MainEventsCleared => {
             pixels.frame_mut().fill(0 as u8);
-            process_physics_updates(&mut planet_list);
-            for i in 0..planet_list.len() {
-                planet_list[i].render(&mut pixels);
-            }
+            planet_list.update_and_render(&mut pixels);
             _ = pixels.render().unwrap();
-            for p in planet_list.iter() {
+            for p in planet_list.list.iter() {
                 print!(
                     "planet '{}' in position x: {}, y: {} ",
                     p.name, p.pos.x, p.pos.y

@@ -47,14 +47,13 @@ impl<'a> Planet<'a> {
     ) -> Planet<'a> {
         let mut rng = rand::thread_rng();
         let r = rng.gen_range(25.0 * radius..50.0 * radius);
-        let mut x: f32 = 200.0;
+        let x: f32 = 200.0;
         if r > 2.5 * radius {
             let y = sun.pos.x + r;
         } else {
             let y = sun.pos.x - r;
         }
         let y = (r.powi(2) - x.powi(2)).abs().sqrt();
-        println!("{name} y: {y}");
         let pos = Vec2::new(x, y);
 
         let mut new_planet = Self::new(name, pos, radius, Vec2::new(0.0, 0.0), mass, color);
@@ -173,11 +172,11 @@ impl<'a> Planet<'a> {
         }
     }
 
-    pub fn update(&mut self, accel: Vec2) {
+    pub fn update(&mut self, timestep: f32, accel: Vec2) {
         // self.vel += Vec2::new(0.01, 0.01);  //accel
         self.accel = accel;
-        self.vel += accel * delta_t;
-        self.pos += self.vel * delta_t;
+        self.vel += accel * timestep;
+        self.pos += self.vel * timestep;
         // println!("{}",self.vel);
     }
 }
@@ -228,9 +227,9 @@ impl PlanetTrail {
         PlanetTrail { pos, radius, color }
     }
 
-    pub fn update(&mut self) {
-        self.radius -= 1.0 * delta_t;
-        self.color.a -= (10.0 * delta_t) as u8;
+    pub fn update(&mut self, timestep: f32) {
+        self.radius -= 1.0 * timestep;
+        self.color.a -= (10.0 * timestep) as u8;
     }
 
     pub fn render(&self, px: &mut Pixels) {
