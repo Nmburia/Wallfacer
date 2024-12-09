@@ -14,6 +14,8 @@ pub struct PlanetSystem<'a> {
     pub list: Vec<Planet<'a>>,
     pub timestep: f32,
     systeminfo: SystemInfo,
+    initial_energy: f32,
+    energy: f32,
 }
 
 impl<'a> PlanetSystem<'a> {
@@ -23,15 +25,24 @@ impl<'a> PlanetSystem<'a> {
             list: vec![],
             timestep,
             systeminfo,
+            initial_energy: 0.0,
+            energy: 0.0,
         }
     }
 
     pub fn from_vec(timestep: f32, planet_list: Vec<Planet<'a>>) -> Self {
         let systeminfo = SystemInfo::new();
+        let energy: f32 = planet_list.iter().fold(0.0, |mut t, p| {
+            t += p.calc_energy();
+            t
+        });
+
         Self {
             list: planet_list,
             timestep,
             systeminfo,
+            initial_energy: energy,
+            energy: 0.0,
         }
     }
 
@@ -99,7 +110,21 @@ impl<'a> PlanetSystem<'a> {
     }
 
     pub fn print_info(&mut self, pixels: &mut Pixels) {
-        self.systeminfo.render_info(pixels);
+        let energy = self.calc_total_energy();
+        let mut energy_string = format!("Total Energy of the system: {}J\n", energy).to_string();
+        let change_energy_string = format!(
+            "Change in energy of the system: {}J\n",
+            self.initial_energy - energy
+        );
+        energy_string += change_energy_string.as_str();
+        self.systeminfo.render_info(pixels, energy_string.as_str());
+    }
+
+    pub fn calc_total_energy(&self) -> f32 {
+        self.list.iter().fold(0.0, |mut t, p| {
+            t += p.calc_energy();
+            t
+        })
     }
 }
 
@@ -124,12 +149,13 @@ impl SystemInfo {
         }
     }
 
-    pub fn render_info(&mut self, pixels: &mut Pixels) {
+    pub fn render_info(&mut self, pixels: &mut Pixels, added_text: &str) {
         let now = Instant::now();
         let delta_t = now.duration_since(self.last_frame_time);
         self.last_frame_time = now;
         let fps = 1.0 / delta_t.as_secs_f32();
-        let text = format!("FPS: {}", fps);
+        let mut text = format!("FPS: {:.2}\n", fps).to_owned();
+        text = text + (added_text);
         let text_color = Color::rgb(0xFF, 0xFF, 0xFF);
 
         self.buffer.set_text(

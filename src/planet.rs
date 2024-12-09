@@ -179,6 +179,10 @@ impl<'a> Planet<'a> {
         self.pos += self.vel * timestep;
         // println!("{}",self.vel);
     }
+
+    pub fn calc_energy(&self) -> f32 {
+        0.5 * self.mass * (self.vel * self.vel).length()
+    }
 }
 
 #[derive(Copy, Clone, PartialEq)]
